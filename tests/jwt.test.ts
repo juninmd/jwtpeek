@@ -45,3 +45,11 @@ test("verifyHs rejects non-HMAC alg", () => {
   const p = Buffer.from(JSON.stringify({ sub: "1" })).toString("base64url");
   expect(verifyHs(`${h}.${p}.`, "anything")).toBe(false);
 });
+
+test("rejects non-object header/payload JSON", () => {
+  for (const v of [null, 1, "s", []]) {
+    const ok = b64url({ alg: "HS256" });
+    expect(() => decodeJwt(`${b64url(v)}.${ok}.x`)).toThrow("invalid header (expected a JSON object)");
+    expect(() => decodeJwt(`${ok}.${b64url(v)}.x`)).toThrow("invalid payload (expected a JSON object)");
+  }
+});

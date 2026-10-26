@@ -39,7 +39,7 @@ async function main(argv: string[]): Promise<number> {
   const vIdx = argv.indexOf("--verify");
   const secret = vIdx > -1 ? argv[vIdx + 1] : undefined;
 
-  const positional = argv.filter((a, i) => !a.startsWith("-") && i !== vIdx + 1);
+  const positional = argv.filter((a, i) => !a.startsWith("-") && (vIdx < 0 || i !== vIdx + 1));
   const token = positional[0] ?? (await readStdin());
   if (!token) {
     console.error(C.red("error: no token given"));
@@ -86,4 +86,10 @@ async function main(argv: string[]): Promise<number> {
   return exp.state === "expired" ? 1 : 0;
 }
 
-main(process.argv.slice(2)).then((code) => process.exit(code));
+main(process.argv.slice(2))
+  .then((code) => process.exit(code))
+  .catch((err) => {
+    console.error(C.red("error: unexpected failure"));
+    if (process.env.JWTPEEK_DEBUG === "1") console.error(err);
+    process.exit(1);
+  });
