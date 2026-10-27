@@ -12,23 +12,26 @@ function b64urlDecode(s: string): string {
   return Buffer.from(s.replace(/-/g, "+").replace(/_/g, "/") + pad, "base64").toString("utf8");
 }
 
+function parseObject(s: string, what: string): Record<string, unknown> {
+  let v: unknown;
+  try {
+    v = JSON.parse(b64urlDecode(s));
+  } catch {
+    throw new Error(`invalid ${what} (not base64url JSON)`);
+  }
+  if (typeof v !== "object" || v === null || Array.isArray(v)) {
+    throw new Error(`invalid ${what} (expected a JSON object)`);
+  }
+  return v as Record<string, unknown>;
+}
+
 /** Decode a JWT without verifying. Throws on structural errors. */
 export function decodeJwt(token: string): DecodedJwt {
   const parts = token.trim().split(".");
   if (parts.length !== 3) throw new Error("not a JWT (expected 3 dot-separated parts)");
   const [h, p, sig] = parts as [string, string, string];
-  let header: Record<string, unknown>;
-  let payload: Record<string, unknown>;
-  try {
-    header = JSON.parse(b64urlDecode(h));
-  } catch {
-    throw new Error("invalid header (not base64url JSON)");
-  }
-  try {
-    payload = JSON.parse(b64urlDecode(p));
-  } catch {
-    throw new Error("invalid payload (not base64url JSON)");
-  }
+  const header = parseObject(h, "header");
+  const payload = parseObject(p, "payload");
   return { header, payload, signature: sig, raw: { header: h, payload: p, signature: sig } };
 }
 
